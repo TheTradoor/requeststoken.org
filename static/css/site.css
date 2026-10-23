@@ -368,6 +368,25 @@ h2 {
   background: var(--bg-raise);
 }
 
+.lock-proof {
+  margin: 0.7rem 0 0;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.lock-proof p.fine { margin: 0 0 0.6rem; }
+
+.lock-proof ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lock-proof li { margin: 0 0 0.35rem; }
+
+.lock-proof a { color: var(--gold); }
+
 .notes {
   margin-top: 1.3rem;
   padding: 1rem 1.1rem 0.3rem;
