@@ -69,7 +69,9 @@ def test_official_site_statement_no_com_link():
 def test_hero_heading_is_dollar_requests():
     import pathlib
     html = pathlib.Path("templates/index.html").read_text()
-    assert "<h1>$requests</h1>" in html
+    assert '<h1><span class="dollar">$</span>requests</h1>' in html
+    import re
+    assert re.sub(r"<[^>]+>", "", re.search(r"<h1>.*?</h1>", html).group(0)) == "$requests"
 
 
 def test_official_account_and_no_todos():

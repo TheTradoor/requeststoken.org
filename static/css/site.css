@@ -226,6 +226,8 @@ h1 {
   letter-spacing: -0.035em;
 }
 
+h1 .dollar { color: var(--gold); }
+
 .lede {
   max-width: 38rem;
   font-size: 1.28rem;
