@@ -29,12 +29,6 @@ def test_no_pepy_or_chart():
     assert 'id="chart"' not in pathlib.Path("templates/index.html").read_text()
 
 
-def test_hero_has_no_dexscreener_link():
-    import pathlib
-    html = pathlib.Path("templates/index.html").read_text()
-    top = html[: html.index("01 — Intentions")]
-    assert "dex_page" not in top and "dexscreener.com" not in top.lower()
-
 
 def test_footer_links_source_on_github():
     from requeststoken.config import PRIMARY_LINKS
@@ -80,3 +74,14 @@ def test_official_account_and_no_todos():
     assert 'href="https://x.com/kennethreitz42"' in html
     assert "Anyone else claiming to speak for $requests is not official." in html
     assert "TODO" not in html
+
+
+def test_dexscreener_links_top_and_footer():
+    import pathlib
+    from requeststoken.config import DEX_PAGE, PRIMARY_LINKS
+    html = pathlib.Path("templates/index.html").read_text()
+    top = html[: html.index("01 — Intentions")]
+    assert 'href="{{ dex_page }}"' in top
+    dex = [l for l in PRIMARY_LINKS if l["label"] == "DexScreener"]
+    assert dex and dex[0]["href"] == DEX_PAGE
+    assert "currently inaccurate" in dex[0]["note"]
