@@ -44,7 +44,7 @@ PRIMARY_LINKS = (
     {
         "label": "DexScreener",
         "href": DEX_PAGE,
-        "note": "Market pair for this contract (metadata to be updated, as it is currently inaccurate).",
+        "note": "Market pair for this contract",
     },
     {
         "label": "pump.fun",

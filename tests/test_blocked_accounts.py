@@ -18,7 +18,7 @@ def test_rendered_page_has_no_blocked_account():
 def test_dexscreener_note():
     from requeststoken.config import PRIMARY_LINKS
     dex = [l for l in PRIMARY_LINKS if l["label"] == "DexScreener"][0]
-    assert dex["note"] == "Market pair for this contract (metadata to be updated, as it is currently inaccurate)."
+    assert dex["note"] == "Market pair for this contract"
 
 
 def test_no_pepy_or_chart():
@@ -84,7 +84,7 @@ def test_dexscreener_links_top_and_footer():
     assert 'href="{{ dex_page }}"' in top
     dex = [l for l in PRIMARY_LINKS if l["label"] == "DexScreener"]
     assert dex and dex[0]["href"] == DEX_PAGE
-    assert "currently inaccurate" in dex[0]["note"]
+    assert dex[0]["note"] == "Market pair for this contract"
 
 
 def test_hero_logo_is_local():
