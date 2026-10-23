@@ -73,7 +73,7 @@ The cache is per process and in `var/` on local disk. More than one worker means
 These are marked **TODO** on the page. They were not filled in, because they were not provided:
 
 - A locker address or transaction for Kenneth’s holding (about 11% of supply, locked until February 14, 2027), so the lock can be checked on chain.
-- Which accounts he considers official. The footer links Kenneth Reitz on X (`https://x.com/kennethreitz42`) and `@RequestsToken` (`https://x.com/RequestsToken`) only as profiles currently published on the token’s DexScreener page.
+- Which accounts he considers official. The footer links Kenneth Reitz on X (`https://x.com/kennethreitz42`). Other X accounts listed on the token's DexScreener page are filtered out (`BLOCKED_HANDLES` in `requeststoken/config.py`); one of them is a known bad actor and is not official.
 - A plain description of how creator fees move, beyond the fact that they are directed to Kenneth Reitz.
 - DexScreener also lists `https://requeststoken.com/` as a website. This project does not treat that address as an official link until it is confirmed.
 

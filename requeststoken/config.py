@@ -83,9 +83,20 @@ PROFILE_LINKS = (
         "href": "https://x.com/kennethreitz42",
         "note": "Published on the token's DexScreener profile",
     },
-    {
-        "label": "@RequestsToken on X",
-        "href": "https://x.com/RequestsToken",
-        "note": "Published on the token's DexScreener profile",
-    },
 )
+
+# Accounts known to be fraudulent / not affiliated. Never shown on the site,
+# even if they appear on the DexScreener profile.
+BLOCKED_HANDLES = ("requeststoken",)
+
+
+def is_blocked_link(link) -> bool:
+    text = " ".join(str(link.get(k, "")) for k in ("label", "href", "url", "handle")).lower()
+    return any(h in text.replace("requeststoken.org", "") for h in BLOCKED_HANDLES)
+
+
+def filter_links(links):
+    return tuple(l for l in links if not is_blocked_link(l))
+
+
+PROFILE_LINKS = filter_links(PROFILE_LINKS)
