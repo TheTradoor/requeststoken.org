@@ -1,0 +1,9 @@
+services:
+  web:
+    image: requeststoken-org:c0cb0fb
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      PORT: "5042"
+    expose:
+      - "5042"
