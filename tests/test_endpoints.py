@@ -244,7 +244,7 @@ def test_homepage_renders_facts_figures_and_the_disclaimer():
     assert "impersonators" in text
     assert "paid-trending" in text
     assert "official links" in text
-    assert "TODO" in text
+    assert "TODO" not in text
     lowered = text.lower()
     assert "connect wallet" not in lowered
     assert "walletconnect" not in lowered
