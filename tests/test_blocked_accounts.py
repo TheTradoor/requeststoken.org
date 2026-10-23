@@ -34,3 +34,9 @@ def test_hero_has_no_dexscreener_link():
     html = pathlib.Path("templates/index.html").read_text()
     top = html[: html.index("01 — Intentions")]
     assert "dex_page" not in top and "dexscreener.com" not in top.lower()
+
+
+def test_footer_links_source_on_github():
+    from requeststoken.config import PRIMARY_LINKS
+    assert {"label": "Source on GitHub", "href": "https://github.com/kennethreitz/requeststoken.org",
+            "note": "The code for this site"} in PRIMARY_LINKS

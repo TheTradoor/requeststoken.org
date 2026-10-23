@@ -37,6 +37,11 @@ PRIMARY_LINKS = (
         "note": "The page you are on",
     },
     {
+        "label": "Source on GitHub",
+        "href": "https://github.com/kennethreitz/requeststoken.org",
+        "note": "The code for this site",
+    },
+    {
         "label": "DexScreener",
         "href": DEX_PAGE,
         "note": "Market pair for this contract (metadata to be updated, as it is currently inaccurate).",
