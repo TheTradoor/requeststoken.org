@@ -61,12 +61,15 @@ Pass `PORT` if the platform assigns one. The app binds `0.0.0.0` on that port.
 
 The cache is per process and in `var/` on local disk. More than one worker means more than one cache.
 
+## Official website
+
+The official website is requeststoken.org. DexScreener currently lists requeststoken.com, which is not official; that listing will be updated.
+
 ## Facts left open
 
 These are marked **TODO** on the page. They were not filled in, because they were not provided:
 
 - Which accounts he considers official. The footer links Kenneth Reitz on X (`https://x.com/kennethreitz42`). Other X accounts listed on the token's DexScreener page are filtered out (`BLOCKED_HANDLES` in `requeststoken/config.py`); one of them is a known bad actor and is not official.
-- DexScreener also lists `https://requeststoken.com/` as a website. This project does not treat that address as an official link until it is confirmed.
 
 There is no roadmap on this page.
 

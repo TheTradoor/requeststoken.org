@@ -56,3 +56,11 @@ def test_creator_fee_disclosure():
     assert "buying more $requests" in html
     assert "not a promise of buybacks, price support, or returns" in html
     assert "A plain description of how creator fees move" not in html
+
+
+def test_official_site_statement_no_com_link():
+    import pathlib
+    html = pathlib.Path("templates/index.html").read_text()
+    assert "The official website is requeststoken.org." in html
+    assert "https://requeststoken.com" not in html
+    assert 'href="https://requeststoken.com' not in html
