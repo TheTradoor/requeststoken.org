@@ -13,3 +13,9 @@ def test_rendered_page_has_no_blocked_account():
     import pathlib
     html = pathlib.Path("templates/index.html").read_text().lower()
     assert "x.com/requeststoken" not in html
+
+
+def test_dexscreener_note():
+    from requeststoken.config import PRIMARY_LINKS
+    dex = [l for l in PRIMARY_LINKS if l["label"] == "DexScreener"][0]
+    assert dex["note"] == "Market pair for this contract (metadata to be updated, as it is currently inaccurate)."
