@@ -64,3 +64,9 @@ def test_official_site_statement_no_com_link():
     assert "The official website is requeststoken.org." in html
     assert "https://requeststoken.com" not in html
     assert 'href="https://requeststoken.com' not in html
+
+
+def test_hero_heading_is_dollar_requests():
+    import pathlib
+    html = pathlib.Path("templates/index.html").read_text()
+    assert "<h1>$requests</h1>" in html
