@@ -40,3 +40,11 @@ def test_footer_links_source_on_github():
     from requeststoken.config import PRIMARY_LINKS
     assert {"label": "Source on GitHub", "href": "https://github.com/kennethreitz/requeststoken.org",
             "note": "The code for this site"} in PRIMARY_LINKS
+
+
+def test_lock_proof_links_on_chain():
+    import pathlib
+    html = pathlib.Path("templates/index.html").read_text()
+    assert "https://solscan.io/account/BaCrGRdrxHrovQjEK8D4PmjWPVCbeaZUPRKvPJ4WW5vo" in html
+    assert "https://solscan.io/tx/2gVXJKnhJ4gXDjPN15CCTXqyDwMkrtz9dBWQByYCxnsHG393QzSYiWjbRLAm7qCsgwbD66i1pk9mfJMfGC6MvoMa" in html
+    assert "A locker address or transaction" not in html
