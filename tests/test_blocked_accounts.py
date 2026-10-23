@@ -19,3 +19,11 @@ def test_dexscreener_note():
     from requeststoken.config import PRIMARY_LINKS
     dex = [l for l in PRIMARY_LINKS if l["label"] == "DexScreener"][0]
     assert dex["note"] == "Market pair for this contract (metadata to be updated, as it is currently inaccurate)."
+
+
+def test_no_pepy_or_chart():
+    import pathlib
+    for f in ["templates/index.html", "static/js/site.js", "requeststoken/data.py", "requeststoken/config.py", "README.md", "Dockerfile", ".env.example"]:
+        t = pathlib.Path(f).read_text().lower()
+        assert "pepy" not in t, f
+    assert 'id="chart"' not in pathlib.Path("templates/index.html").read_text()

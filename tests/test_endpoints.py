@@ -8,8 +8,8 @@ from datetime import datetime, timezone
 
 import httpx
 
-from requeststoken.config import CONTRACT, DEX_API, PEPY_API, PYPI_OVERALL, PYPI_RECENT
-from requeststoken.data import ManualClock, Services, TtlCache, normalize_pepy
+from requeststoken.config import CONTRACT, DEX_API, PYPI_OVERALL, PYPI_RECENT
+from requeststoken.data import ManualClock, Services, TtlCache
 from requeststoken.web import create_app
 
 PAIR = {
@@ -50,17 +50,6 @@ OVERALL = {
     "package": "requests",
     "type": "overall_downloads",
 }
-
-PEPY = {
-    "id": "requests",
-    "total_downloads": 1000,
-    "downloads": {
-        "2026-10-08": {"2.32.0": 2, "2.31.0": 3},
-        "2026-10-09": {"2.32.0": 4},
-        "2026-10-10": {"2.32.0": 5},
-    },
-}
-
 
 class FakeResponse:
     def __init__(self, payload, status_code=200):
@@ -205,57 +194,14 @@ def test_requests_endpoint_without_key_uses_pypistats_and_drops_mirrors():
     figures = {item["label"]: item["downloads"] for item in body["figures"]}
     assert figures == {"Last week": 1000, "Last month": 5000}
     assert [point["downloads"] for point in body["series"]] == [100, 250]
-    assert all(call["url"] != PEPY_API for call in client.calls)
-    assert "pepy.tech" in body["detail"]
     assert "pypistats.org" in body["detail"]
-
-
-def test_requests_endpoint_prefers_pepy_and_hides_the_key():
-    secret = "super-secret-pepy-key"
-    api, client = build(
-        {PEPY_API: [FakeResponse(PEPY)]},
-        env={"PEPY_API_KEY": secret},
-    )
-    response = api.requests.get("/api/requests")
-    body = response.json()
-    assert body["source"] == "pepy"
-    assert body["total_downloads"] == 1000
-    figures = {item["label"]: item["downloads"] for item in body["figures"]}
-    assert figures["All-time"] == 1000
-    assert figures["Past 7 days"] == 14
-    assert figures["Past 30 days"] == 14
-    assert client.calls[0]["headers"]["X-API-Key"] == secret
-    assert secret not in response.text
-    assert all(call["url"] != PYPI_RECENT for call in client.calls)
-
-    again = api.requests.get("/api/requests")
-    assert again.json()["total_downloads"] == 1000
-    assert len(client.calls) == 1
-
-
-def test_requests_endpoint_falls_back_when_pepy_rejects_the_key():
-    api, client = build(
-        {
-            PEPY_API: [FakeResponse({"detail": "nope"}, status_code=401)],
-            PYPI_RECENT: [FakeResponse(RECENT)],
-            PYPI_OVERALL: [FakeResponse(OVERALL)],
-        },
-        env={"PEPY_API_KEY": "not-a-real-key"},
-    )
-    body = api.requests.get("/api/requests").json()
-    assert body["available"] is True
-    assert body["source"] == "pypistats"
-    assert "could not be read" in body["detail"]
-    assert "not-a-real-key" not in json.dumps(body)
-    assert [call["url"] for call in client.calls] == [PEPY_API, PYPI_RECENT, PYPI_OVERALL]
 
 
 def test_requests_endpoint_when_both_sources_fail():
     api, _client = build({
-        PEPY_API: [RuntimeError("pepy down")],
         PYPI_RECENT: [RuntimeError("pypi down")],
         PYPI_OVERALL: [RuntimeError("pypi down")],
-    }, env={"PEPY_API_KEY": "k"})
+    })
     response = api.requests.get("/api/requests")
     assert response.status_code == 200
     body = response.json()
@@ -275,14 +221,6 @@ def test_disk_cache_is_used_when_a_later_process_cannot_reach_upstream(tmp_path)
     assert body["available"] is True
     assert body["stale"] is True
     assert body["market_cap_usd"] == 101143
-
-
-def test_pepy_window_sums_versions_per_day():
-    body = normalize_pepy(PEPY, datetime(2026, 10, 23, tzinfo=timezone.utc))
-    by_label = {item["label"]: item for item in body["figures"]}
-    assert by_label["Past 7 days"]["downloads"] == 14
-    assert "3 days" in by_label["Past 7 days"]["note"]
-    assert body["series"][0] == {"date": "2026-10-08", "downloads": 5}
 
 
 def test_homepage_renders_facts_figures_and_the_disclaimer():

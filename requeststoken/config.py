@@ -12,8 +12,6 @@ DEX_API = f"https://api.dexscreener.com/latest/dex/tokens/{CONTRACT}"
 DEX_PAGE = f"https://dexscreener.com/solana/{CONTRACT}"
 PUMP_PAGE = f"https://pump.fun/coin/{CONTRACT}"
 
-PEPY_API = f"https://api.pepy.tech/api/v2/projects/{PACKAGE}"
-PEPY_PAGE = f"https://pepy.tech/projects/{PACKAGE}"
 
 PYPI_PAGE = f"https://pypi.org/project/{PACKAGE}/"
 PYPI_RECENT = f"https://pypistats.org/api/packages/{PACKAGE}/recent"
@@ -28,7 +26,7 @@ USER_AGENT = "requeststoken.org/1.0 (+https://requeststoken.org)"
 # Successful DexScreener reads are reused for a little under the 30s poll.
 TOKEN_TTL = 20
 TOKEN_ERROR_TTL = 15
-# Download totals move on a daily cadence, and pepy.tech's free key is 5 RPM.
+# Download totals move on a daily cadence.
 STATS_TTL = 15 * 60
 STATS_ERROR_TTL = 60
 
@@ -62,11 +60,6 @@ PRIMARY_LINKS = (
         "label": "Requests source",
         "href": SOURCE_PAGE,
         "note": "github.com/psf/requests",
-    },
-    {
-        "label": "pepy.tech",
-        "href": PEPY_PAGE,
-        "note": "Download counts for the library",
     },
     {
         "label": "pypistats.org",

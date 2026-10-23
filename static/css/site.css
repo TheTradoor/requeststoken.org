@@ -453,55 +453,11 @@ h2 {
 .change.down { color: var(--clay); }
 .change.flat { color: var(--ink); }
 
-.chart-block { margin: 1.4rem 0 0.4rem; }
 
-.chart-wrap {
-  position: relative;
-}
 
-.chart-wrap.has-series {
-  min-height: 220px;
-  margin-top: 1.2rem;
-  padding: 0.75rem 0.5rem 0.35rem;
-  background: rgba(8, 10, 8, 0.45);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-}
 
-.chart-wrap svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
 
-.chart-tip {
-  position: absolute;
-  z-index: 2;
-  transform: translate(-50%, calc(-100% - 10px));
-  padding: 0.35rem 0.55rem;
-  border: 1px solid rgba(228, 195, 106, 0.4);
-  border-radius: 8px;
-  background: #1c2218;
-  color: var(--ink);
-  font-family: var(--mono);
-  font-size: 0.75rem;
-  white-space: nowrap;
-  pointer-events: none;
-}
 
-.chart-caption,
-.status,
-.detail,
-.used-by {
-  max-width: 44rem;
-}
-
-.chart-caption,
-.status,
-.detail {
-  color: var(--muted);
-  font-size: 0.95rem;
-}
 
 .used-by { margin-top: 1.4rem; }
 

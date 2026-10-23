@@ -21,21 +21,14 @@ Optional environment variables, in a `.env` file (loaded if present, without ove
 
 | Variable | Purpose |
 | --- | --- |
-| `PEPY_API_KEY` | API key for [pepy.tech](https://pepy.tech/pepy-api). Sent only as the `X-API-Key` header on the server. Never put it in the page or the client. |
 | `PORT` | Port to bind. Defaults to `5042`. |
 | `LOG_LEVEL` | Python log level. Defaults to `INFO`. |
 
-Copy `.env.example` to `.env` if you want the key locally.
+## Download stats
 
-## Download stats and the pepy.tech key
+`GET /api/requests` reads the PyPI package `requests` from the public, keyless [pypistats.org](https://pypistats.org/packages/requests) API (recent totals, mirrors excluded). No API keys are needed. pypistats does not publish an all-time total, so that figure is left off.
 
-`GET /api/requests` reads the PyPI package `requests`.
-
-- With `PEPY_API_KEY`, the server calls `https://api.pepy.tech/api/v2/projects/requests`. That response includes the all-time total and about three months of daily downloads per version. The page sums versions into one number per day. pepy.tech requires a key; a missing or rejected key is not shown to visitors.
-- Without a key, or if pepy.tech fails, the server uses the public [pypistats.org](https://pypistats.org/packages/requests) API (recent totals, and daily downloads with mirrors excluded). pypistats does not publish an all-time total, so that figure is left off and the page says where the numbers came from.
-- If both sources fail, the page says download stats are temporarily unavailable. A previous successful read, including one saved in `var/upstream-cache.json`, is shown instead and marked as the last saved figures.
-
-Successful download reads are cached in memory for 15 minutes. The free pepy.tech key is limited to a handful of requests per minute, and the underlying counts are daily.
+If pypistats fails, the page says download stats are temporarily unavailable, or shows the last saved figures from `var/upstream-cache.json`, marked as such. Reads are cached in memory for 15 minutes.
 
 ## Market figures
 
@@ -51,7 +44,7 @@ The first object in `pairs` is the one displayed. The browser asks `/api/token` 
 uv run pytest
 ```
 
-The tests call the JSON routes through Responder’s in-process client. DexScreener, pepy.tech, and pypistats are replaced with scripted responses, so the suite does not use the network.
+The tests call the JSON routes through Responder’s in-process client. DexScreener and pypistats are replaced with scripted responses, so the suite does not use the network.
 
 ## Deploy
 
@@ -59,12 +52,12 @@ The container build uses uv and the lockfile. It does not install packages any o
 
 ```bash
 docker build -t requeststoken .
-docker run --rm -p 5042:5042 -e PEPY_API_KEY=... requeststoken
+docker run --rm -p 5042:5042 requeststoken
 ```
 
 Pass `PORT` if the platform assigns one. The app binds `0.0.0.0` on that port.
 
-`Procfile` is `web: .venv/bin/python app.py`. On a platform that expects a Procfile, install dependencies in the build step with `uv sync --frozen --no-dev`, then start from the Procfile. Set `PEPY_API_KEY` in the host environment. Do not bake the key into the image.
+`Procfile` is `web: .venv/bin/python app.py`. On a platform that expects a Procfile, install dependencies in the build step with `uv sync --frozen --no-dev`, then start from the Procfile.
 
 The cache is per process and in `var/` on local disk. More than one worker means more than one cache.
 

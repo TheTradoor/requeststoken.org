@@ -1,4 +1,4 @@
-"""Upstream reads for DexScreener, pepy.tech, and the pypistats fallback.
+"""Upstream reads for DexScreener and pypistats.org.
 
 The HTTP client is injectable so tests never touch the network. Successful
 payloads are cached in memory and, unless disabled, mirrored to a JSON file
@@ -23,8 +23,6 @@ from requeststoken.config import (
     DEX_PAGE,
     DISK_CACHE,
     PACKAGE,
-    PEPY_API,
-    PEPY_PAGE,
     PYPI_OVERALL,
     PYPI_RECENT,
     PYPISTATS_PAGE,
@@ -264,7 +262,7 @@ def _window(label: str, total: int, end: str, observations: int, expected: int) 
 
 def series_caption(series: list[dict], source_label: str) -> str:
     if not series:
-        return "A chart appears when daily download counts are available."
+        return ""
     start = pretty_day(series[0]["date"])
     end = pretty_day(series[-1]["date"])
     latest = format_count(series[-1]["downloads"])
@@ -362,14 +360,14 @@ def unavailable_stats(detail: str) -> dict:
         "package": PACKAGE,
         "source": "unavailable",
         "source_label": None,
-        "source_url": PEPY_PAGE,
+        "source_url": "https://pypistats.org/packages/requests",
         "stale": False,
         "fetched_at": None,
         "fetched_at_display": None,
         "total_downloads": None,
         "figures": [],
         "series": [],
-        "series_caption": "A chart appears when daily download counts are available.",
+        "series_caption": "",
         "detail": detail,
         "status_display": detail,
     }
@@ -513,46 +511,6 @@ def normalize_pair(pair: dict, fetched_at: datetime) -> dict:
     return body
 
 
-def normalize_pepy(payload: dict, fetched_at: datetime) -> dict:
-    downloads = payload.get("downloads") if isinstance(payload, dict) else None
-    if not isinstance(downloads, dict) or not downloads:
-        raise UpstreamError("pepy.tech did not include daily downloads.")
-    series = []
-    for day, versions in downloads.items():
-        if not isinstance(versions, dict):
-            continue
-        total = 0
-        counted = False
-        for count in versions.values():
-            try:
-                total += int(count)
-                counted = True
-            except (TypeError, ValueError):
-                continue
-        if counted:
-            series.append({"date": str(day), "downloads": total})
-    series = _clip_series(series)
-    if not series:
-        raise UpstreamError("pepy.tech did not include daily downloads.")
-    raw_total = payload.get("total_downloads")
-    total_downloads = _int_or_none(raw_total)
-    week, week_end, week_n = window_sum(series, 7)
-    month, month_end, month_n = window_sum(series, 30)
-    return build_stats(
-        source="pepy",
-        source_label="pepy.tech",
-        source_url=PEPY_PAGE,
-        total_downloads=total_downloads,
-        windows=[
-            _window("Past 7 days", week, week_end, week_n, 7),
-            _window("Past 30 days", month, month_end, month_n, 30),
-        ],
-        series=series,
-        fetched_at=fetched_at,
-        detail="Daily downloads are the sum of every version pepy.tech reported that day.",
-    )
-
-
 def normalize_pypistats(recent: dict, overall: dict, fetched_at: datetime) -> dict:
     data = recent.get("data") if isinstance(recent, dict) else None
     if not isinstance(data, dict):
@@ -660,32 +618,14 @@ class Services:
             held = self._held("stats")
             if held is not None:
                 return held
-        key = str(self.env.get("PEPY_API_KEY") or "").strip()
-        pepy_failed = False
-        if key:
-            try:
-                payload = self._get_json(PEPY_API, headers={"X-API-Key": key})
-                body = normalize_pepy(payload, self.clock.now())
-                self._remember("stats", body, now, STATS_TTL)
-                return body
-            except Exception as exc:
-                pepy_failed = True
-                self._log_failure("pepy", exc)
         try:
             recent = self._get_json(PYPI_RECENT)
             overall = self._get_json(PYPI_OVERALL, params={"mirrors": "false"})
             body = normalize_pypistats(recent, overall, self.clock.now())
-            if pepy_failed:
-                body["detail"] = (
-                    "pepy.tech could not be read, so these counts are from pypistats.org instead. "
-                    "An all-time total is omitted. The chart is daily downloads with mirror traffic excluded."
-                )
-            else:
-                body["detail"] = (
-                    "Counts are from pypistats.org, the public PyPI download statistics. "
-                    "An all-time total is included when this server is reading pepy.tech. "
-                    "The chart is daily downloads with mirror traffic excluded."
-                )
+            body["detail"] = (
+                "Counts are from pypistats.org, the public PyPI download statistics, "
+                "with mirror traffic excluded."
+            )
             body["status_display"] = stats_status(body)
             self._remember("stats", body, now, STATS_TTL)
             return body

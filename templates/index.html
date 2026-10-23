@@ -109,16 +109,6 @@
           {% endfor %}
         </dl>
 
-        <figure class="chart-block">
-          <div class="chart-wrap {% if stats.series %}has-series{% endif %}">
-            <svg id="chart" viewBox="0 0 720 260" role="img" aria-hidden="true" hidden></svg>
-            <div id="chart-tip" class="chart-tip" hidden></div>
-          </div>
-          <figcaption class="chart-caption" id="chart-caption">{{ stats.series_caption }}</figcaption>
-        </figure>
-        <noscript>
-          <p class="fine">The chart is drawn with JavaScript. The totals above are in the page without it.</p>
-        </noscript>
 
         {% if stats.available %}
         <p class="status" id="library-status">{{ stats.status_display }}</p>
