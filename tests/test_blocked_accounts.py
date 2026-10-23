@@ -27,3 +27,10 @@ def test_no_pepy_or_chart():
         t = pathlib.Path(f).read_text().lower()
         assert "pepy" not in t, f
     assert 'id="chart"' not in pathlib.Path("templates/index.html").read_text()
+
+
+def test_hero_has_no_dexscreener_link():
+    import pathlib
+    html = pathlib.Path("templates/index.html").read_text()
+    top = html[: html.index("01 — Intentions")]
+    assert "dex_page" not in top and "dexscreener.com" not in top.lower()
