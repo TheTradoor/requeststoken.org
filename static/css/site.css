@@ -199,23 +199,22 @@ nav a:hover { color: var(--ink); }
 .hero-logo {
   display: inline-block;
   position: relative;
-  margin: 0 0 1.1rem;
-  padding: 0.55rem;
-  background: var(--ink);
+  margin: 0 0 1.2rem;
+  border-radius: 22px;
+  overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 16px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
   line-height: 0;
 }
 
 .hero-logo img {
   display: block;
-  width: 104px;
+  width: 200px;
   height: auto;
 }
 
 @media (max-width: 640px) {
-  .hero-logo img { width: 80px; }
+  .hero-logo img { width: 160px; }
 }
 
 .kicker {
