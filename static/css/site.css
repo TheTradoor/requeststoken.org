@@ -196,6 +196,28 @@ nav a:hover { color: var(--ink); }
   pointer-events: none;
 }
 
+.hero-logo {
+  display: inline-block;
+  position: relative;
+  margin: 0 0 1.1rem;
+  padding: 0.55rem;
+  background: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  line-height: 0;
+}
+
+.hero-logo img {
+  display: block;
+  width: 104px;
+  height: auto;
+}
+
+@media (max-width: 640px) {
+  .hero-logo img { width: 80px; }
+}
+
 .kicker {
   display: flex;
   align-items: center;

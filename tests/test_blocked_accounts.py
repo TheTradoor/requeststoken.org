@@ -85,3 +85,11 @@ def test_dexscreener_links_top_and_footer():
     dex = [l for l in PRIMARY_LINKS if l["label"] == "DexScreener"]
     assert dex and dex[0]["href"] == DEX_PAGE
     assert "currently inaccurate" in dex[0]["note"]
+
+
+def test_hero_logo_is_local():
+    import pathlib
+    html = pathlib.Path("templates/index.html").read_text()
+    assert 'src="/static/img/requests-logo.png"' in html
+    assert "readthedocs.io/en/latest/_static" not in html
+    assert pathlib.Path("static/img/requests-logo.png").stat().st_size > 1000
