@@ -70,3 +70,11 @@ def test_hero_heading_is_dollar_requests():
     import pathlib
     html = pathlib.Path("templates/index.html").read_text()
     assert "<h1>$requests</h1>" in html
+
+
+def test_official_account_and_no_todos():
+    import pathlib
+    html = pathlib.Path("templates/index.html").read_text()
+    assert 'href="https://x.com/kennethreitz42"' in html
+    assert "Anyone else claiming to speak for $requests is not official." in html
+    assert "TODO" not in html
