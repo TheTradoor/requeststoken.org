@@ -93,3 +93,12 @@ def test_hero_logo_is_local():
     assert 'src="/static/img/requests-caduceus.webp"' in html
     assert "readthedocs.io/en/latest/_static" not in html
     assert pathlib.Path("static/img/requests-caduceus.webp").stat().st_size > 1000
+
+
+def test_umami_analytics_script_and_csp():
+    import pathlib
+    html = pathlib.Path("templates/index.html").read_text()
+    assert '<script defer src="https://analytics.kennethreitz.org/script.js" data-website-id="b3e5361e-b5d5-4097-95a6-d9d9def5378a"></script>' in html
+    from requeststoken.web import _CSP
+    assert "script-src 'self' https://analytics.kennethreitz.org" in _CSP
+    assert "connect-src 'self' https://analytics.kennethreitz.org" in _CSP
