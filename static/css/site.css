@@ -699,3 +699,4 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 0.8; }
 .lock-head { font-weight: 400; }
 .heritage-title { margin-top: 2rem; }
 @media print { .anchor { display: none; } }
+.rules-title { font-style: normal; line-height: 1.4; }
