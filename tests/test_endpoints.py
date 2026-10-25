@@ -262,3 +262,15 @@ def test_homepage_still_renders_when_upstreams_fail():
     assert CONTRACT in response.text
     assert "temporarily unavailable" in response.text
     assert "not financial advice" in response.text
+
+
+def test_trust_strip_lock_card_and_timeline_markup():
+    import pathlib
+    html = pathlib.Path("templates/index.html").read_text()
+    assert "marked to confirm" not in html
+    assert 'class="trust-strip"' in html and "@kennethreitz42" in html
+    assert 'id="lock-progress"' in html and 'data-end="2027-02-14T05:00:00Z"' in html
+    assert html.count('data-copy="') == 5
+    assert "https://solscan.io/account/BaCrGRdrxHrovQjEK8D4PmjWPVCbeaZUPRKvPJ4WW5vo" in html
+    assert 'class="timeline"' in html and "0.2.0" in html
+    assert "creator of the token" not in html.lower()

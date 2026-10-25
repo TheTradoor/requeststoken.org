@@ -51,6 +51,35 @@
     });
   }
 
+
+  document.querySelectorAll("[data-copy]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      copyText(button.getAttribute("data-copy") || "").then(function () {
+        button.textContent = "Copied";
+        button.classList.add("is-copied");
+        if (copyStatus) copyStatus.textContent = "Address copied.";
+      }).catch(function () {
+        button.textContent = "Failed";
+      });
+      window.setTimeout(function () {
+        button.textContent = "Copy";
+        button.classList.remove("is-copied");
+      }, 1600);
+    });
+  });
+
+  const lock = document.getElementById("lock-progress");
+  if (lock) {
+    const start = Date.parse(lock.getAttribute("data-start"));
+    const end = Date.parse(lock.getAttribute("data-end"));
+    const now = Date.now();
+    const pct = Math.max(0, Math.min(1, (now - start) / (end - start)));
+    const fill = document.getElementById("lock-fill");
+    if (fill) fill.style.width = (pct * 100).toFixed(1) + "%";
+    const days = Math.max(0, Math.ceil((end - now) / 86400000));
+    text("lock-left", days > 0 ? days + " days to unlock" : "Unlock date reached");
+  }
+
   function applyToken(data) {
     const ready = Boolean(data && data.available);
     const grid = document.getElementById("market-grid");
