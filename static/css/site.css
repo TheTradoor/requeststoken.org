@@ -687,3 +687,15 @@ code {
 .rules-list .rule-wide { grid-column: 1 / -1; }
 .rules-list p { font-size: clamp(1.45rem, 2.6vw, 2.1rem); }
 @media (max-width: 760px) { .rules-list p { font-size: 1.5rem; } }
+
+/* Section anchors */
+[id] { scroll-margin-top: 5.5rem; }
+.anchor { margin-left: 0.3em; font-family: var(--mono); font-style: normal; font-weight: 400; font-size: 0.6em; color: var(--gold); text-decoration: none; opacity: 0; transition: opacity 0.15s ease; vertical-align: 0.15em; }
+h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 0.8; }
+.anchor:hover { opacity: 1; }
+@media (hover: none) { .anchor { opacity: 0.45; } }
+.rules-title { font-size: 0.75rem; font-weight: 400; }
+.rules-title .anchor { font-size: 1em; }
+.lock-head { font-weight: 400; }
+.heritage-title { margin-top: 2rem; }
+@media print { .anchor { display: none; } }

@@ -282,3 +282,16 @@ def test_trust_strip_lock_card_and_timeline_markup():
     assert "Requests 2.0.0 is released on November 15." in html
     assert html.index("1.0.0") < html.index("2.0.0") < html.index('tl-year">PSF')
     assert "creator of the token" not in html.lower()
+
+
+def test_section_anchors():
+    import pathlib
+    html = pathlib.Path("templates/index.html").read_text()
+    for anchor in ("hero", "rules", "intentions", "lock", "library", "heritage", "market", "disclaimer", "links"):
+        assert html.count(f'id="{anchor}"') == 1, anchor
+    for anchor in ("rules", "intentions", "lock", "library", "heritage", "market", "disclaimer", "links"):
+        assert f'<a class="anchor" href="#{anchor}"' in html, anchor
+    for nav in ("#intentions", "#library", "#market", "#disclaimer"):
+        assert f'href="{nav}"' in html
+    css = pathlib.Path("static/css/site.css").read_text()
+    assert "scroll-margin-top" in css

@@ -36,7 +36,7 @@
   </header>
 
   <main id="content">
-    <section class="hero">
+    <section class="hero" id="hero">
       <div class="wrap">
         <svg class="hero-mark" viewBox="0 0 160 200" aria-hidden="true">
           <path d="M118 28c28 18 34 54 16 82-20 32-64 36-86 10-18-22-8-52 18-62 28-12 56 6 50 34-6 30-48 40-78 22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
@@ -70,8 +70,7 @@
 
     <section class="rules-band" id="rules" aria-labelledby="rules-title">
       <div class="wrap">
-        <p class="index">Kenneth’s community rules</p>
-        <h2 id="rules-title" class="visually-hidden">Kenneth’s community rules</h2>
+        <h2 id="rules-title" class="index rules-title">Kenneth’s community rules <a class="anchor" href="#rules" aria-label="Link to this section">#</a></h2>
         <ol class="rules-list">
           <li><span class="rule-n">1</span><p><a href="https://kennethreitz.org/essays/2013-01-be_cordial_or_be_on_your_way" target="_blank" rel="noopener noreferrer">Be cordial, or be on your way.</a></p></li>
           <li><span class="rule-n">2</span><p>Stay risk averse.</p></li>
@@ -86,7 +85,7 @@
       <div class="wrap intent-grid">
         <div class="prose">
           <p class="index">01 — Intentions</p>
-          <h2>What the coin is for</h2>
+          <h2>What the coin is for <a class="anchor" href="#intentions" aria-label="Link to this section">#</a></h2>
           <p>The coin is meant to celebrate and support open source, and the legacy of Requests. Transparency comes first. There is no sleight of hand.</p>
           <p>Requests began as Kenneth’s library — “HTTP for Humans” — and the project now lives with the Python Software Foundation at <a href="https://github.com/psf/requests" target="_blank" rel="noopener noreferrer">github.com/psf/requests</a>. This token is a separate thing: a memecoin on Solana. It does not change the library, and the library does not back the token.</p>
           <p>This page does not publish a roadmap, a price target, a buyback, or a burn.</p>
@@ -94,7 +93,7 @@
         <div>
           <div class="lock-card" id="lock">
             <p class="lock-kicker">Lock proof · Streamflow</p>
-            <p class="lock-head">102,507,662.69 tokens locked until Feb 14, 2027</p>
+            <h3 class="lock-head">102,507,662.69 tokens locked until Feb 14, 2027 <a class="anchor" href="#lock" aria-label="Link to this section">#</a></h3>
             <p class="fine">Kenneth’s own holding, about 11% of supply. It cannot be cancelled or transferred, and the full amount unlocks at once on February 14, 2027 at 05:00 UTC (midnight Eastern).</p>
             <div class="lock-progress" id="lock-progress" data-start="2026-10-21T23:37:17Z" data-end="2027-02-14T05:00:00Z">
               <div class="lock-bar"><span class="lock-fill" id="lock-fill"></span></div>
@@ -118,7 +117,7 @@
     <section class="section" id="library">
       <div class="wrap">
         <p class="index">02 — The library</p>
-        <h2>Requests on PyPI</h2>
+        <h2>Requests on PyPI <a class="anchor" href="#library" aria-label="Link to this section">#</a></h2>
         <p class="deck">The package named <code>requests</code>. These are download counts, not a measure of the token.</p>
 
         <p id="library-unavailable" class="unavailable" {% if stats.available %}hidden{% endif %}>
@@ -141,6 +140,7 @@
         {% if stats.detail %}<p class="detail">{{ stats.detail }}</p>{% endif %}
         {% endif %}
 
+        <h3 class="side-label heritage-title" id="heritage">A short history of Requests <a class="anchor" href="#heritage" aria-label="Link to this section">#</a></h3>
         <ol class="timeline" aria-label="Requests history">
           <li><span class="tl-year">2011</span><span class="tl-text">Kenneth publishes Requests 0.2.0 to PyPI on February 14: “HTTP for Humans.” <a href="https://pypi.org/project/requests/0.2.0/" target="_blank" rel="noopener noreferrer">PyPI</a></span></li>
           <li><span class="tl-year">2012</span><span class="tl-text">Requests 1.0.0 is released in December. <a href="https://pypi.org/project/requests/1.0.0/" target="_blank" rel="noopener noreferrer">PyPI</a></span></li>
@@ -167,7 +167,7 @@
     <section class="section" id="market">
       <div class="wrap">
         <p class="index">03 — The market</p>
-        <h2>The pair, right now</h2>
+        <h2>The pair, right now <a class="anchor" href="#market" aria-label="Link to this section">#</a></h2>
         <p class="deck">Price, market cap, liquidity, volume, and 24-hour buys and sells for the contract above, from DexScreener’s public API. The first pair in that response is the one shown here. Read the numbers as information about the market.</p>
 
         <p id="market-unavailable" class="unavailable" {% if token.available %}hidden{% endif %}>
@@ -213,16 +213,16 @@
     <div class="disclaimer-band" id="disclaimer">
       <div class="wrap">
         <p class="index">04 — Disclaimer</p>
-        <h2>Disclaimer</h2>
+        <h2>Disclaimer <a class="anchor" href="#disclaimer" aria-label="Link to this section">#</a></h2>
         <p>Memecoins are highly speculative. This is not financial advice. There are no promises of price, returns, or value. Only spend what you can afford to lose.</p>
         <p>Beware of impersonators, paid-trending pitches, and anyone who asks you to DM them about fees. The only official links are the ones listed on this site.</p>
       </div>
     </div>
   </main>
 
-  <footer class="site-footer">
+  <footer class="site-footer" id="links">
     <div class="wrap">
-      <h2>Links on this site</h2>
+      <h2>Links on this site <a class="anchor" href="#links" aria-label="Link to this section">#</a></h2>
       <p class="deck">If a message, advertisement, or account is not listed here, it is not this site.</p>
       <ul class="footer-links">
         {% for link in primary_links %}
