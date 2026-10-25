@@ -236,7 +236,9 @@ def test_homepage_renders_facts_figures_and_the_disclaimer():
     assert "$101,143" in text
     assert "1,000" in text
     assert "Be cordial, or be on your way." in text
-    assert "stay risk averse." in text
+    assert "Stay risk averse." in text
+    assert 'href="https://kennethreitz.org/essays/2013-01-be_cordial_or_be_on_your_way"' in text
+    assert text.index('id="rules"') < text.index('id="intentions"')
     assert "February 14, 2027" in text
     assert "about 11%" in text
     assert "not financial advice" in text

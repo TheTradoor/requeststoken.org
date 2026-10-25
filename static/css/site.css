@@ -668,3 +668,19 @@ code {
 .addr-list li { grid-template-columns: minmax(0, 1fr) auto auto; }
 .lock-card, .timeline li, .tl-text { min-width: 0; overflow-wrap: anywhere; }
 .trust-strip + .link-row { margin-top: 0.9rem; }
+
+/* Community rules band */
+.rules-band { padding: 3.5rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: radial-gradient(ellipse at 20% 0%, rgba(228, 195, 106, 0.10), transparent 60%), rgba(228, 195, 106, 0.03); }
+.rules-band .index { margin-bottom: 1.4rem; }
+.rules-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.rules-list li { display: flex; gap: 1.1rem; align-items: baseline; padding: 1.6rem 1.7rem; border: 1px solid rgba(228, 195, 106, 0.35); border-radius: 16px; background: rgba(16, 20, 16, 0.6); }
+.rule-n { font-family: var(--mono); font-size: 0.8rem; color: var(--gold); border: 1px solid rgba(228, 195, 106, 0.5); border-radius: 50%; width: 1.9rem; height: 1.9rem; display: inline-flex; align-items: center; justify-content: center; flex: none; transform: translateY(-0.3rem); }
+.rules-list p { margin: 0; font-family: var(--serif); font-style: italic; font-size: clamp(1.6rem, 3.2vw, 2.4rem); line-height: 1.15; color: var(--ink); }
+.rules-list a { color: inherit; text-decoration: underline; text-decoration-color: rgba(228, 195, 106, 0.5); text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+.rules-list a:hover { color: var(--gold); }
+.rules-list a::after { content: " ↗"; font-style: normal; font-size: 0.5em; color: var(--gold); vertical-align: 0.4em; }
+@media (max-width: 760px) {
+  .rules-band { padding: 2.5rem 0; }
+  .rules-list { grid-template-columns: 1fr; gap: 0.9rem; }
+  .rules-list li { padding: 1.2rem 1.25rem; }
+}
