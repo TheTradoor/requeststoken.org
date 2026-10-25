@@ -731,3 +731,5 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 0.8; }
 .chat-alt { color: var(--muted); font-size: 0.9rem; }
 .chat-notes { margin: 0; padding-left: 1.1rem; }
 .chat-notes li { margin: 0.3rem 0; }
+.chat-secondary { margin: 0 0 1rem; color: var(--muted); font-size: 0.9rem; }
+#chat-title { font-style: normal; }
