@@ -684,3 +684,6 @@ code {
   .rules-list { grid-template-columns: 1fr; gap: 0.9rem; }
   .rules-list li { padding: 1.2rem 1.25rem; }
 }
+.rules-list .rule-wide { grid-column: 1 / -1; }
+.rules-list p { font-size: clamp(1.45rem, 2.6vw, 2.1rem); }
+@media (max-width: 760px) { .rules-list p { font-size: 1.5rem; } }

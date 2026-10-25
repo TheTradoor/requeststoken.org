@@ -237,6 +237,10 @@ def test_homepage_renders_facts_figures_and_the_disclaimer():
     assert "1,000" in text
     assert "Be cordial, or be on your way." in text
     assert "Stay risk averse." in text
+    assert "Nobody official will ever DM you first." in text
+    assert "Build things for humans." in text
+    assert "Optimize for social impactfulness and sustainability, ideally." in text
+    assert text.index("Stay risk averse.") < text.index("Nobody official") < text.index("Build things for humans.") < text.index("Optimize for social")
     assert 'href="https://kennethreitz.org/essays/2013-01-be_cordial_or_be_on_your_way"' in text
     assert text.index('id="rules"') < text.index('id="intentions"')
     assert "February 14, 2027" in text
