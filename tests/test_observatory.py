@@ -1,8 +1,7 @@
-"""Observed snapshots, shared refresh leases and failure handling; no network."""
+"""Real Redis coordination with scripted upstream responses (no external HTTP)."""
 
 import copy
 import json
-import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -44,45 +43,49 @@ class ScriptedClient:
 def result(rows): return {"data": rows, "rows": len(rows)}
 
 
-def make(tmp_path, bodies=(), **kwargs):
+def make(redis_store, bodies=(), **kwargs):
     clock = kwargs.pop("clock", ManualClock(datetime(2026, 10, 25, 12, tzinfo=timezone.utc)))
     executor = kwargs.pop("executor", QueueExecutor())
     client = ScriptedClient(bodies)
-    service = DownloadObservatory(database=tmp_path / "cache.sqlite", seed=seed(), client=client,
+    service = DownloadObservatory(store=redis_store, env={}, seed=seed(), client=client,
                                   clock=clock, executor=executor, **kwargs)
     return service, client, clock, executor
 
 
-def test_first_request_is_immediate_and_one_refresh_is_shared_between_instances(tmp_path):
-    one, client, clock, jobs = make(tmp_path)
+def test_first_request_is_immediate_and_one_refresh_is_shared_between_instances(redis_store):
+    one, client, clock, jobs = make(redis_store)
     first = one.read()
     assert first["status"] == "fallback" and first["refreshing"]
     assert first["snapshot"]["rawTotal"] == 300
     assert not client.calls and len(jobs.jobs) == 1
-    two, _, _, other_jobs = make(tmp_path, clock=clock)
+    two, _, _, other_jobs = make(redis_store, clock=clock)
     assert two.read()["refreshing"]
     assert not other_jobs.jobs
     assert one.read()["snapshot"]["rawTotal"] == 300
     assert len(jobs.jobs) == 1
 
 
-def test_success_replaces_counts_and_reuses_snapshot_until_hourly_refresh(tmp_path):
+def test_success_replaces_counts_and_reuses_snapshot_until_hourly_refresh(redis_store):
     daily = seed()["daily"] + [{"date": "2026-10-25", "downloads": "40"}]
-    service, client, clock, jobs = make(tmp_path, [result(daily), result([{"downloads": "340"}]), result([{"downloads": 40}])])
+    service, client, clock, jobs = make(redis_store, [result(daily), result([{"downloads": "340"}]), result([{"downloads": 40}])])
     service.read(); jobs.run()
     body = service.read()
     assert body["status"] == "current" and not body["refreshing"]
     assert body["snapshot"]["rawTotal"] == 340
     assert body["snapshot"]["daily"][-1]["downloads"] == 40
     assert len(client.calls) == 3
-    clock.advance(3599); assert not service.read()["refreshing"]
-    clock.advance(2); assert service.read()["refreshing"]
-    with sqlite3.connect(service.database) as db:
-        assert db.execute("SELECT raw_total,reported_days FROM source_checks").fetchone() == (340, 3)
+    # Timers belong to Redis, not any worker's clock.
+    clock.advance(3601); assert not service.read()["refreshing"]
+    assert 3590 <= redis_store.client.ttl(redis_store.cooldown_key) <= 3600
+    redis_store.client.pexpireat(redis_store.cooldown_key, 1)
+    assert service.read()["refreshing"]
+    check = json.loads(redis_store.client.hget(redis_store.state_key, "check:2026-10-25"))
+    assert (check["rawTotal"], check["reportedDays"]) == (340, 3)
+    assert redis_store.client.ttl(redis_store.state_key) == -1
 
 
-def test_failures_preserve_snapshot_time_and_back_off_then_accept_corrections(tmp_path):
-    service, client, clock, jobs = make(tmp_path, [RuntimeError("offline")])
+def test_failures_preserve_snapshot_time_and_back_off_then_accept_corrections(redis_store):
+    service, client, clock, jobs = make(redis_store, [RuntimeError("offline")])
     first = service.read(); jobs.run()
     failed = service.read()
     assert failed["status"] == "cached"
@@ -90,16 +93,16 @@ def test_failures_preserve_snapshot_time_and_back_off_then_accept_corrections(tm
     assert failed["snapshot"]["fetchedAt"] == "2026-10-25T00:00:00Z"
     assert failed["checkedAt"] != failed["snapshot"]["fetchedAt"]
     clock.advance(599); service.read(); assert not jobs.jobs
-    clock.advance(2)
+    redis_store.client.pexpireat(redis_store.cooldown_key, 1)
     client.bodies.extend([result([{"date": "2026-10-23", "downloads": 90}, {"date": "2026-10-24", "downloads": 190}]), result([{"downloads": 280}]), result([{"downloads": 190}])])
     service.read(); jobs.run()
     assert service.read()["snapshot"]["rawTotal"] == 280
 
 
-def test_expired_lease_can_be_reclaimed_without_old_worker_overwriting_new_data(tmp_path):
-    old, _, clock, jobs = make(tmp_path, [RuntimeError("late failure")])
-    old.read(); clock.advance(121)
-    new, _, _, newer_jobs = make(tmp_path, [result(seed()["daily"]), result([{"downloads": 310}]), result([{"downloads": 200}])], clock=clock)
+def test_expired_lease_can_be_reclaimed_without_old_worker_overwriting_new_data(redis_store):
+    old, _, clock, jobs = make(redis_store, [RuntimeError("late failure")])
+    old.read(); redis_store.client.pexpireat(redis_store.lease_key, 1)
+    new, _, _, newer_jobs = make(redis_store, [result(seed()["daily"]), result([{"downloads": 310}]), result([{"downloads": 200}])], clock=clock)
     new.read(); newer_jobs.run(); jobs.run()
     assert new.read()["status"] == "current"
     assert new.read()["snapshot"]["rawTotal"] == 310
@@ -111,16 +114,16 @@ def test_expired_lease_can_be_reclaimed_without_old_worker_overwriting_new_data(
     [{"date": "2026-10-24", "downloads": 200}, {"date": "2026-10-23", "downloads": 100}],
     [{"date": "2026-10-23", "downloads": 100}, {"date": "2026-10-23", "downloads": 100}],
 ])
-def test_bad_history_cannot_replace_last_snapshot(tmp_path, rows):
-    service, _, _, jobs = make(tmp_path, [result(rows), result([{"downloads": 300}]), result([{"downloads": 200}])])
+def test_bad_history_cannot_replace_last_snapshot(redis_store, rows):
+    service, _, _, jobs = make(redis_store, [result(rows), result([{"downloads": 300}]), result([{"downloads": 200}])])
     first = service.read(); jobs.run()
     assert service.read()["status"] == "cached"
     assert service.read()["snapshot"] == first["snapshot"]
 
 
-def test_truncated_responses_are_errors_even_with_plausible_data(tmp_path):
+def test_truncated_responses_are_errors_even_with_plausible_data(redis_store):
     body = result(seed()["daily"]); body["rows_before_limit_at_least"] = 3
-    service, _, _, jobs = make(tmp_path, [body])
+    service, _, _, jobs = make(redis_store, [body])
     service.read(); jobs.run()
     assert service.read()["status"] == "cached"
 
@@ -139,17 +142,21 @@ def test_queries_include_current_day_and_fail_instead_of_truncating():
     with pytest.raises(ValueError): queries_for("2026-10-25' OR 1=1", "2026-10-24")
 
 
-def test_read_only_storage_and_disabled_refresh_still_serve_seed(tmp_path):
-    service, client, _, jobs = make(tmp_path, refresh_enabled=False)
+def test_no_redis_and_disabled_refresh_still_serve_seed():
+    service, client, _, jobs = make(None, refresh_enabled=False)
     assert not service.read()["refreshing"] and not jobs.jobs and not client.calls
-    blocked = tmp_path / "file"; blocked.write_text("not a directory")
-    service.database = blocked / "cache.sqlite"
     assert service.read()["snapshot"]["rawTotal"] == 300
     assert service.read()["status"] == "fallback"
 
 
-def test_routes_render_directory_and_preserve_existing_stats_contract(tmp_path):
-    service, _, _, _ = make(tmp_path, refresh_enabled=False)
+def test_no_redis_does_not_start_uncoordinated_upstream_requests():
+    service, client, _, jobs = make(None)
+    assert not service.read()["refreshing"] and not jobs.jobs and not client.calls
+    assert service.read()["status"] == "fallback"
+
+
+def test_routes_render_directory_and_preserve_existing_stats_contract(redis_store):
+    service, _, _, _ = make(redis_store, refresh_enabled=False)
     api = create_app(Services(client=ScriptedClient([]), disk=None), observatory=service)
     response = api.requests.get("/observatory")
     assert response.status_code == 200
