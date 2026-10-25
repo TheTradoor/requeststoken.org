@@ -239,7 +239,7 @@ def test_homepage_renders_facts_figures_and_the_disclaimer():
     assert "Stay risk averse." in text
     assert "Expect imposters. We’ll never DM you first." in text
     assert "Build things for humans." in text
-    assert "Optimize for social impactfulness and sustainability, ideally." in text
+    assert "Optimize for social impact and sustainability." in text
     assert text.index("Stay risk averse.") < text.index("Build things for humans.") < text.index("Expect imposters.") < text.index("Optimize for social")
     assert 'href="https://kennethreitz.org/essays/2013-01-be_cordial_or_be_on_your_way"' in text
     assert text.index('id="rules"') < text.index('id="intentions"')
