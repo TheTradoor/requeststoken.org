@@ -1,6 +1,6 @@
 services:
   web:
-    image: requeststoken-org:0e47e45
+    image: requeststoken-org:00f8554
     pull_policy: never
     restart: unless-stopped
     environment:
