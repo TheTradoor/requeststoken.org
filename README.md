@@ -30,6 +30,38 @@ Optional environment variables, in a `.env` file (loaded if present, without ove
 
 If pypistats fails, the page says download stats are temporarily unavailable, or shows the last saved figures from `var/upstream-cache.json`, marked as such. Reads are cached in memory for 15 minutes.
 
+## Requests observatory
+
+`/observatory` adds calendar-day/week/month counts, a historical total, dated
+history, a chart, CSV export and 120 reviewed public projects with usage details
+and pinned source evidence. Historical OpenAI and Anthropic SDK versions appear
+in a separate section. The homepage links to the observatory; `/api/requests`
+keeps its existing pypistats response and filtering.
+
+`/api/observatory` reads a separate ClickPy/ClickHouse source without API keys.
+A saved audit renders immediately while at most one shared background refresh
+runs. SQLite snapshots, refresh leases and daily check records live in
+`var/observatory.sqlite`. Keep `var/` on persistent storage to retain cache/check
+history across container replacement. A read-only/unavailable cache falls back
+to the bundled, explicitly dated audit. Set `REQUESTS_OBSERVATORY_REFRESH=0` for
+offline review; normal operation defaults to hourly, visit-triggered refresh.
+
+This is a **delayed daily source**, not a realtime event feed. Counts never grow
+from clock ticks. Missing data stays unknown/Pending, and the historical total
+does not cover the library's entire lifetime. See [source definitions, coverage,
+maintenance and deferred realtime work](docs/observatory.md).
+
+The normal Python suite covers the new routes, source validation, shared cache,
+lease expiry, failures and corrections. Calendar behavior also has dependency-free
+JavaScript tests:
+
+```sh
+uv run pytest
+node --test tests/observatory-stats.test.mjs
+```
+
+Node is needed only for that optional JavaScript test command, not deployment.
+
 ## Market figures
 
 `GET /api/token` reads DexScreener:
