@@ -273,4 +273,6 @@ def test_trust_strip_lock_card_and_timeline_markup():
     assert html.count('data-copy="') == 5
     assert "https://solscan.io/account/BaCrGRdrxHrovQjEK8D4PmjWPVCbeaZUPRKvPJ4WW5vo" in html
     assert 'class="timeline"' in html and "0.2.0" in html
+    assert "Requests 2.0.0 is released on November 15." in html
+    assert html.index("1.0.0") < html.index("2.0.0") < html.index('tl-year">PSF')
     assert "creator of the token" not in html.lower()
