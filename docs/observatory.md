@@ -1,8 +1,10 @@
 # Requests observatory
 
 The observatory is a library download-history and public-project evidence page.
-It runs in the existing Responder application and needs no additional production
-dependency, API key, Google Cloud account or frontend build step. Realtime event
+It runs in the existing Responder application. Shared updates use Redis and the
+locked `redis-py` dependency; no download-source API key, Google Cloud account
+or frontend build step is required. Without Redis it serves a saved audit.
+Realtime event
 collection remains deferred; `requests-intraday-proof.sql` is an unexecuted
 candidate query for that separate work.
 
@@ -12,13 +14,15 @@ candidate query for that separate work.
 | --- | --- |
 | `/observatory` | Server-rendered page with interactive counters, archive and project directory |
 | `/api/observatory` | Shared source snapshot, cache status and timestamps |
-| `requeststoken/observatory.py` | Source queries/validation, SQLite snapshot, refresh lease and error backoff |
+| `requeststoken/observatory.py` | Source queries/validation, background refresh and fallback behavior |
+| `requeststoken/observatory_store.py` | Redis snapshot, atomic refresh lease, backoff and source-check history |
+| `requeststoken/observatory_migrate.py` | Optional read-only SQLite import into an empty Redis namespace |
 | `static/js/observatory-stats.mjs` | Calendar periods, gap-preserving history and CSV |
 | `static/js/observatory.mjs` | Charts, controls, source status and accessible project dialogs |
 | `static/observatory/adoption-evidence.json` | Reviewed project manifest and downloadable evidence |
 | `static/observatory/download-snapshot.json` | Fixed, dated fallback audit |
 | `static/observatory/download-proof-2026-10-25.zip` | Original SQL, raw responses, CSV and integrity hashes |
-| `var/observatory.sqlite` | Runtime cache and daily source-check history; not committed |
+| Redis `{requeststoken:observatory:v1}:state` | Latest snapshot and daily source-check history; runtime data, not committed |
 
 The existing homepage, `/api/token`, and `/api/requests` keep their current
 contracts. The latter uses pypistats with mirrors excluded and reported rolling
@@ -58,28 +62,114 @@ References:
 
 ## Refresh and storage behavior
 
-Requests return an existing snapshot immediately. When a refresh is due, a
-SQLite transaction obtains a 120-second lease and submits one background job.
-The job performs bounded HTTP source queries, validates the results, and replaces
-the snapshot atomically. A unique lease token prevents an expired worker from
-overwriting a newer worker's result. Successful checks wait an hour; failures
-retain the last snapshot and wait ten minutes. No visit means no refresh, and
-there is no separate scheduler or realtime collector.
+Requests read the shared snapshot without waiting for upstream queries. A short
+Redis Lua script reads the snapshot and, when due, obtains a 120-second lease
+for one background job. The job performs bounded HTTP source queries, validates
+the results, and publishes the snapshot and that UTC day's source-check record
+together. A unique token checked during publication prevents an expired worker
+from overwriting newer data, releasing another worker's lease or changing its
+retry timer. Successful checks wait an hour; failures retain the last snapshot
+and wait ten minutes. Timers use Redis expiry rather than application clocks.
+No visit means no refresh; there is no separate scheduler or realtime collector.
 
 The browser rechecks every five minutes while visible, on returning to the tab,
 or on manual refresh. While a shared job is running, it checks its status every
 ten seconds. It reads the shared cache, not a separate upstream query per visitor.
 
-SQLite coordinates workers that share the same database file. Separate hosts
-or containers with different storage have independent caches and leases. Persist
-`var/` across redeployments; for multiple hosts, choose an appropriate shared
-collector/database before scaling this refresh design. The existing deployment
-files are not changed to provision infrastructure automatically.
+Workers on different hosts coordinate through the same Redis endpoint and
+namespace. This client targets a single primary endpoint, including a managed
+service's primary endpoint; direct Redis Cluster discovery is not implemented.
+The lease prevents duplicate jobs on that primary while it is valid. Expiry or
+asynchronous failover can still allow overlapping source reads; this is not an
+exactly-once collector. Reads are idempotent and publication requires a live
+matching token. The feature does not provision Redis or modify the running site.
 
-`REQUESTS_OBSERVATORY_REFRESH=0` disables upstream attempts for offline review.
-A missing/unwritable database or network failure leaves the saved audit visible
-with a warning. An import/client/proxy configuration failure is handled inside
-the background job; it does not prevent the rest of the page from rendering.
+`REQUESTS_OBSERVATORY_REFRESH=0` disables this worker's upstream attempts but
+still reads Redis. With `REDIS_URL` unset, no shared writes or upstream jobs
+start. Missing, invalid or unreachable Redis leaves the last locally observed
+snapshot visible with `status: fallback`; a new process uses the bundled audit.
+There is no independent SQLite refresh fallback that could bypass the shared
+lease. Connections and socket reads each have a one-second timeout and no
+automatic retries. Invalid cached JSON is never displayed; a successful source
+refresh can replace it. Source/client/proxy errors also preserve the snapshot.
+
+## Redis setup and durability
+
+Use Redis 7.4 or newer and the dependencies in `uv.lock` (`redis-py` 8.1.0).
+The application user needs `EVAL`, `HGET`, `HSET`, `GET`, `SET`, `EXISTS`, `DEL`
+and `PERSIST` on the configured namespace. The optional migration also needs
+`WATCH`, `UNWATCH`, `MULTI` and `EXEC`. Do not grant access to unrelated keys.
+
+For local development, start a private Redis instance, for example:
+
+```sh
+docker run -d --name requests-observatory-redis \
+  -p 127.0.0.1:6379:6379 \
+  -v requests-observatory-redis:/data \
+  redis:7.4-alpine redis-server \
+  --appendonly yes --appendfsync everysec --maxmemory-policy noeviction
+export REDIS_URL=redis://127.0.0.1:6379/0
+uv sync --frozen
+uv run python app.py
+```
+
+For production, use a private endpoint with credentials and `rediss://` when
+TLS is provided. Keep TLS verification enabled. Supply `REDIS_URL` as a hosting
+secret, never in Git or a public frontend variable. The application does not
+print Redis URLs/passwords in errors. A separate Redis database/instance with
+adequate memory is preferable to sharing an evicting general-purpose cache.
+
+All workers must share `REQUESTS_OBSERVATORY_REDIS_PREFIX` (default
+`requeststoken:observatory:v1`). Use a different prefix for previews. Allowed
+characters are ASCII letters, digits, `_`, `.`, `:`, `-` (1–120 characters).
+For prefix `requeststoken:observatory:v1`, the keys are:
+
+| Key | Content | Expiry |
+| --- | --- | --- |
+| `{requeststoken:observatory:v1}:state` | Hash: `snapshot` JSON envelope plus `check:YYYY-MM-DD` records | None |
+| `{requeststoken:observatory:v1}:lease` | Unique refresh-owner token | 120 seconds |
+| `{requeststoken:observatory:v1}:cooldown` | Next-attempt delay | 3,600 seconds after success; 600 after failure |
+
+The snapshot includes the complete returned daily series. Each `check:` field
+keeps that UTC day's latest successful check, including fetch time, coverage and
+raw counts; it is not a record of every request or every revision. Day/week/month
+counter resets never delete either dataset. Source corrections replace absolute
+counts and may decrease totals.
+
+Non-expiring keys alone are **not durability**. Enable AOF (for example,
+`appendonly yes`, `appendfsync everysec`) on persistent storage, or equivalent
+managed persistence, and use `maxmemory-policy noeviction`. With every-second
+fsync, a crash can still lose roughly the last second of writes. Monitor memory,
+write errors and persistence health; `noeviction` rejects writes when full.
+Keep scheduled backups outside the Redis instance/volume and test restoring a
+backup into an isolated instance before relying on it. Managed backups or
+consistent RDB snapshots are suitable; follow the provider's supported procedure
+for backing up multipart AOF. Do not copy an actively changing AOF directory as
+if it were a consistent backup. After restoring, check `/api/observatory` for the
+expected `latestDate`, `fetchedAt`, daily history and status before resuming refreshes.
+
+References: [Redis persistence](https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/),
+[atomic Lua execution](https://redis.io/docs/latest/develop/programmability/eval-intro/),
+[redis-py connections](https://redis.readthedocs.io/en/stable/connections.html).
+
+### Optional import from the earlier SQLite version
+
+If the SQLite version was already run, stop all observatory workers and back up
+`var/observatory.sqlite` first. This step is unnecessary for a fresh deployment.
+Validate the source, then import into an **empty** Redis namespace:
+
+```sh
+uv run python -m requeststoken.observatory_migrate var/observatory.sqlite --dry-run
+# Set/export the target REDIS_URL (and optional prefix) before the next command.
+uv run python -m requeststoken.observatory_migrate var/observatory.sqlite
+```
+
+The importer opens SQLite read-only, validates the snapshot/checks and atomically
+writes them to Redis. It refuses to overwrite any destination state, lease or
+cooldown. It does not copy leases/timers or delete the SQLite file. Keep the
+backup until the migrated snapshot/history and Redis backups have been verified.
+Do not change namespaces casually after deployment: another namespace starts
+without that runtime history. There is no automatic destructive migration.
 
 ## API and time semantics
 
