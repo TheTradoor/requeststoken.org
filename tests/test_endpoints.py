@@ -287,7 +287,7 @@ def test_trust_strip_lock_card_and_timeline_markup():
 def test_section_anchors():
     import pathlib
     html = pathlib.Path("templates/index.html").read_text()
-    for anchor in ("hero", "rules", "intentions", "lock", "library", "heritage", "market", "disclaimer", "links"):
+    for anchor in ("hero", "rules", "chat", "intentions", "lock", "library", "heritage", "market", "disclaimer", "links"):
         assert html.count(f'id="{anchor}"') == 1, anchor
     for anchor in ("rules", "intentions", "lock", "library", "heritage", "market", "disclaimer", "links"):
         assert f'<a class="anchor" href="#{anchor}"' in html, anchor
@@ -315,3 +315,13 @@ def test_thesis_holders_and_listing_note():
     assert "his wife needs a new car" in html
     assert "DexScreener currently lists requeststoken.com" not in html
     assert "42.0% of supply" in html and "Solana mainnet RPC" in html
+
+
+def test_group_chat_join_link():
+    import pathlib
+    html = pathlib.Path("templates/index.html").read_text()
+    assert html.count('id="chat"') == 1
+    assert 'href="https://x.com/i/chat/group_join/g2113555281518977367/54IJSMh16G"' in html
+    assert "Join the group chat" in html and "DM @kennethreitz42" in html
+    assert "no Telegram and no Discord" in html
+    assert "never DM you first" in html

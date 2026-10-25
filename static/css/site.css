@@ -721,3 +721,13 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 0.8; }
   .trust-strip li { padding: 0.3rem 0.6rem; font-size: 0.78rem; }
   .hero .link-row { margin-top: 0.7rem; }
 }
+
+/* Group chat */
+.chat-band { padding: 2.6rem 0; border-bottom: 1px solid var(--line); }
+.chat-lede { max-width: 40rem; margin: 0 0 1rem; }
+.chat-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 1.2rem; margin: 0 0 1rem; }
+.chat-join { display: inline-block; padding: 0.7rem 1.3rem; border-radius: 999px; background: var(--gold); color: #14120c; font-weight: 600; text-decoration: none; }
+.chat-join:hover { filter: brightness(1.08); }
+.chat-alt { color: var(--muted); font-size: 0.9rem; }
+.chat-notes { margin: 0; padding-left: 1.1rem; }
+.chat-notes li { margin: 0.3rem 0; }
