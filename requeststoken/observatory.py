@@ -1,4 +1,4 @@
-"""Download snapshots from ClickHouse, with a shared SQLite cache and lease.
+"""Download snapshots from ClickHouse, with a shared Redis cache and lease.
 
 This is a delayed daily source. Realtime event collection is intentionally not
 implemented. Requests return the last snapshot while one background read runs.
@@ -10,18 +10,18 @@ import copy
 import json
 import logging
 import os
-import sqlite3
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager, nullcontext
+from contextlib import nullcontext
 from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
-from pathlib import Path
+from threading import RLock
 from uuid import uuid4
 
 import httpx
 
 from requeststoken.config import ROOT, USER_AGENT
 from requeststoken.data import SystemClock
+from requeststoken.observatory_store import DEFAULT_PREFIX, RedisSnapshotStore
 
 logger = logging.getLogger("requeststoken.observatory")
 ASSETS = ROOT / "static" / "observatory"
@@ -98,77 +98,77 @@ def adoption_manifest() -> dict:
 
 
 class DownloadObservatory:
-    def __init__(self, *, database=None, seed=None, client=None, clock=None,
-                 refresh_enabled=None, executor=None):
-        self.database = Path(database) if database is not None else ROOT / "var" / "observatory.sqlite"
+    def __init__(self, *, store=None, seed=None, client=None, clock=None,
+                 refresh_enabled=None, executor=None, env=None):
+        env = os.environ if env is None else env
         self.seed = validate_snapshot(seed if seed is not None else json.loads(
             (ASSETS / "download-snapshot.json").read_text(encoding="utf-8")
         ))
         self.clock = clock or SystemClock()
         self.client = client
         self.refresh_enabled = (
-            os.environ.get("REQUESTS_OBSERVATORY_REFRESH", "1") != "0"
+            env.get("REQUESTS_OBSERVATORY_REFRESH", "1") != "0"
             if refresh_enabled is None else refresh_enabled
         )
         self.executor = executor or ThreadPoolExecutor(max_workers=1, thread_name_prefix="downloads")
+        self.store = store
+        if self.store is None and env.get("REDIS_URL"):
+            try:
+                self.store = RedisSnapshotStore.from_url(
+                    env["REDIS_URL"], env.get("REQUESTS_OBSERVATORY_REDIS_PREFIX", DEFAULT_PREFIX),
+                )
+            except Exception as exc:
+                logger.warning("snapshot store configuration unavailable (%s)", type(exc).__name__)
+        self._state_lock = RLock()
+        self._last = {"snapshot": self.seed, "checkedAt": self.seed["fetchedAt"], "status": "fallback"}
 
-    @contextmanager
-    def _connect(self):
-        self.database.parent.mkdir(parents=True, exist_ok=True)
-        db = sqlite3.connect(self.database, timeout=3)
-        try:
-            db.row_factory = sqlite3.Row
-            db.execute("""CREATE TABLE IF NOT EXISTS snapshot (
-                id TEXT PRIMARY KEY, payload TEXT NOT NULL, checked_at TEXT NOT NULL,
-                status TEXT NOT NULL, next_attempt REAL NOT NULL DEFAULT 0,
-                lease_until REAL NOT NULL DEFAULT 0, lease_token TEXT)""")
-            db.execute("""CREATE TABLE IF NOT EXISTS source_checks (
-                day TEXT PRIMARY KEY, fetched_at TEXT NOT NULL, latest_date TEXT NOT NULL,
-                raw_total INTEGER NOT NULL, raw_latest INTEGER NOT NULL, reported_days INTEGER NOT NULL)""")
-            db.execute("INSERT OR IGNORE INTO snapshot (id,payload,checked_at,status) VALUES (?,?,?,?)",
-                       ("requests", json.dumps(self.seed), self.seed["fetchedAt"], "fallback"))
-            db.commit()
-            yield db
-            db.commit()
-        except Exception:
-            db.rollback()
-            raise
-        finally:
-            db.close()
+    @staticmethod
+    def _decode(payload):
+        value = json.loads(payload)
+        snapshot = validate_snapshot(value["snapshot"])
+        checked = datetime.fromisoformat(value["checkedAt"].replace("Z", "+00:00"))
+        if checked.tzinfo is None or value["status"] not in ("current", "cached", "fallback"):
+            raise ValueError("Invalid stored snapshot metadata")
+        return {"snapshot": snapshot, "checkedAt": value["checkedAt"], "status": value["status"]}
 
     def read(self) -> dict:
-        now = self.clock.timestamp()
-        stamp = self.clock.now().astimezone(timezone.utc).isoformat()
-        snapshot, checked, status, refreshing = self.seed, self.seed["fetchedAt"], "fallback", False
-        token = None
-        try:
-            with self._connect() as db:
-                db.execute("BEGIN IMMEDIATE")
-                row = db.execute("SELECT * FROM snapshot WHERE id='requests'").fetchone()
-                snapshot = validate_snapshot(json.loads(row["payload"]))
-                checked, status = row["checked_at"], row["status"]
-                if status not in ("current", "cached", "fallback"):
-                    raise ValueError("Invalid cache status")
-                refreshing = row["lease_until"] > now
-                if self.refresh_enabled and not refreshing and row["next_attempt"] <= now:
-                    token, refreshing = uuid4().hex, True
-                    db.execute("UPDATE snapshot SET lease_until=?, lease_token=? WHERE id='requests'",
-                               (now + 120, token))
-            if token:
-                self.executor.submit(self._refresh, snapshot, token)
-        except Exception as exc:
-            logger.warning("snapshot cache unavailable (%s)", type(exc).__name__)
-            # A valid saved row remains usable if scheduling or storage fails.
+        with self._state_lock:
+            envelope = self._last
             status, refreshing = "fallback", False
+            if self.store is not None:
+                token = uuid4().hex
+                try:
+                    payload, acquired, refreshing = self.store.read_and_claim(token, self.refresh_enabled)
+                    if payload:
+                        try:
+                            envelope = self._decode(payload)
+                            self._last = envelope
+                            status = envelope["status"]
+                        except Exception as exc:
+                            # A fresh, validated source read can repair malformed
+                            # cached JSON; it must never be sent to the browser.
+                            logger.warning("invalid shared snapshot (%s)", type(exc).__name__)
+                    if acquired:
+                        try:
+                            self.executor.submit(self._refresh, envelope["snapshot"], token)
+                        except Exception as exc:
+                            logger.warning("snapshot refresh could not start (%s)", type(exc).__name__)
+                            recorded = self._record_failure(envelope["snapshot"], token)
+                            envelope = self._last
+                            status, refreshing = envelope["status"] if recorded else "fallback", False
+                except Exception as exc:
+                    logger.warning("snapshot cache unavailable (%s)", type(exc).__name__)
+                    status, refreshing = "fallback", False
+            result = copy.deepcopy(envelope)
+        result["status"] = status
         message = None
         if status == "cached":
             message = "The latest source check failed. Showing the last successful snapshot."
         elif status == "fallback":
-            message = "Showing the saved audit. A fresh source snapshot has not been confirmed."
-        return {
-            "snapshot": copy.deepcopy(snapshot), "status": status, "checkedAt": checked,
-            "serverTime": stamp, "refreshing": refreshing, "message": message,
-        }
+            message = "Showing a saved snapshot. A fresh source check has not been confirmed."
+        result.update(serverTime=self.clock.now().astimezone(timezone.utc).isoformat(),
+                      refreshing=refreshing, message=message)
+        return result
 
     def _query(self, sql: str, client) -> list:
         response = client.get(ENDPOINT, params={"user": "demo", "query": sql})
@@ -213,21 +213,28 @@ class DownloadObservatory:
     def _refresh(self, previous: dict, token: str):
         try:
             fresh = self.fetch_snapshot(previous)
-            with self._connect() as db:
-                changed = db.execute("""UPDATE snapshot SET payload=?,checked_at=?,status='current',
-                    next_attempt=?,lease_until=0,lease_token=NULL WHERE id='requests' AND lease_token=?""",
-                    (json.dumps(fresh), fresh["fetchedAt"], self.clock.timestamp() + 3600, token)).rowcount
-                if changed:
-                    db.execute("INSERT OR REPLACE INTO source_checks VALUES (?,?,?,?,?,?)", (
-                        self.clock.now().astimezone(timezone.utc).date().isoformat(), fresh["fetchedAt"],
-                        fresh["latestDate"], fresh["rawTotal"], fresh["rawLatest"], len(fresh["daily"]),
-                    ))
+            envelope = {"snapshot": fresh, "checkedAt": fresh["fetchedAt"], "status": "current"}
+            check = {
+                "day": self.clock.now().astimezone(timezone.utc).date().isoformat(),
+                "fetchedAt": fresh["fetchedAt"], "latestDate": fresh["latestDate"],
+                "rawTotal": fresh["rawTotal"], "rawLatest": fresh["rawLatest"],
+                "reportedDays": len(fresh["daily"]),
+            }
+            with self._state_lock:
+                if self.store.publish(token, envelope, check=check):
+                    self._last = envelope
         except Exception as exc:
             logger.warning("download source refresh failed (%s)", type(exc).__name__)
-            try:
-                with self._connect() as db:
-                    db.execute("""UPDATE snapshot SET checked_at=?,status='cached',next_attempt=?,
-                        lease_until=0,lease_token=NULL WHERE id='requests' AND lease_token=?""",
-                        (self.clock.now().astimezone(timezone.utc).isoformat(), self.clock.timestamp() + 600, token))
-            except Exception as cache_error:
-                logger.warning("could not record source failure (%s)", type(cache_error).__name__)
+            self._record_failure(previous, token)
+
+    def _record_failure(self, previous, token):
+        envelope = {"snapshot": previous, "checkedAt": self.clock.now().astimezone(timezone.utc).isoformat(),
+                    "status": "cached"}
+        try:
+            with self._state_lock:
+                if self.store.publish(token, envelope):
+                    self._last = envelope
+                    return True
+        except Exception as exc:
+            logger.warning("could not record source failure (%s)", type(exc).__name__)
+        return False
