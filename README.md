@@ -63,7 +63,7 @@ The cache is per process and in `var/` on local disk. More than one worker means
 
 ## Official website
 
-The official website is requeststoken.org. DexScreener currently lists requeststoken.com, which is not official; that listing will be updated.
+The official website is requeststoken.org. Since the community takeover on Oct 24, 2026, the DexScreener listing shows only requeststoken.org and @kennethreitz42.
 
 ## Official account
 

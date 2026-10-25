@@ -305,3 +305,13 @@ def test_fomo_link():
     html = pathlib.Path("templates/index.html").read_text()
     assert "Also trade and follow on" in html
     assert html.count("{{ fomo_page }}") == 2
+
+
+def test_thesis_holders_and_listing_note():
+    import pathlib
+    html = pathlib.Path("templates/index.html").read_text()
+    assert 'id="thesis"' in html and 'href="#rules">five rules' in html and 'href="#lock">' in html
+    assert "didn’t launch it" in html and "largest holder" in html
+    assert "his wife needs a new car" in html
+    assert "DexScreener currently lists requeststoken.com" not in html
+    assert "42.0% of supply" in html and "Solana mainnet RPC" in html

@@ -90,6 +90,16 @@
           <p>The coin is meant to celebrate and support open source, and the legacy of Requests. Transparency comes first. There is no sleight of hand.</p>
           <p>Requests began as Kenneth’s library — “HTTP for Humans” — and the project now lives with the Python Software Foundation at <a href="https://github.com/psf/requests" target="_blank" rel="noopener noreferrer">github.com/psf/requests</a>. This token is a separate thing: a memecoin on Solana. It does not change the library, and the library does not back the token.</p>
           <p>This page does not publish a roadmap, a price target, a buyback, or a burn.</p>
+          <div class="thesis" id="thesis">
+            <h3>The thesis, plainly</h3>
+            <ul>
+              <li>A community token named after Requests, HTTP for Humans.</li>
+              <li>Kenneth didn’t launch it. He is its largest holder, and he took over the listing to give it an honest home.</li>
+              <li>The community runs on <a href="#rules">five rules</a>.</li>
+              <li>Skin in the game: about 102.5M tokens (about 10.7% of supply) are <a href="#lock">locked on Streamflow</a>, non-cancelable, until Feb 14, 2027.</li>
+              <li>It is not an investment product. It is a small, thinly traded memecoin with no promises of price, returns, or a roadmap. Only put in what you’re fine losing.</li>
+            </ul>
+          </div>
         </div>
         <div>
           <div class="lock-card" id="lock">
@@ -109,7 +119,7 @@
             </ul>
           </div>
           <p class="lock fees">Creator fees from trading go to Kenneth Reitz. He uses them in two ways: buying more $requests, and supporting his growing family (for example, his wife needs a new car). This is a plain disclosure, not a promise of buybacks, price support, or returns.</p>
-          <p class="lock">The official website is requeststoken.org. DexScreener currently lists requeststoken.com, which is not official; that listing will be updated.</p>
+          <p class="lock">The official website is requeststoken.org. Since the community takeover on Oct 24, 2026, the DexScreener listing shows only requeststoken.org and @kennethreitz42.</p>
           <p class="lock">The only official account is <a href="https://x.com/kennethreitz42" target="_blank" rel="noopener noreferrer">@kennethreitz42</a> on X. Anyone else claiming to speak for $requests is not official.</p>
         </div>
       </div>
@@ -207,6 +217,7 @@
           <a id="pair-link" href="{{ token.pair_url }}" target="_blank" rel="noopener noreferrer">View the pair on DexScreener</a>
           <span id="listed-on">{% if token.listed_on %}Pair listed {{ token.listed_on }}.{% endif %}</span>
         </p>
+        <p class="pair-line" id="holders-line">Holder concentration: the 10 largest token accounts hold 42.0% of supply, including the PumpSwap pool (13.3%) and Kenneth’s lock escrow (10.7%); the other eight hold 18.0%. 388 accounts hold a balance. Source: Solana mainnet RPC, Token-2022 accounts for this mint, Oct 25, 2026 at 10:18 AM ET.</p>
         <p class="pair-line" id="fomo-line">Also trade and follow on <a href="{{ fomo_page }}" target="_blank" rel="noopener noreferrer">fomo</a>.</p>
         <p class="status" id="market-status">{{ token.status_display }}</p>
       </div>
