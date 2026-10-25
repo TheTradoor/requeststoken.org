@@ -13,6 +13,7 @@ from requeststoken.config import (
     PRIMARY_LINKS,
     PROFILE_LINKS,
     PUMP_PAGE,
+    FOMO_PAGE,
     DEX_PAGE,
     ROOT,
 )
@@ -75,6 +76,7 @@ def create_app(services: Services | None = None) -> responder.API:
             contract=CONTRACT,
             dex_page=DEX_PAGE,
             pump_page=PUMP_PAGE,
+            fomo_page=FOMO_PAGE,
             primary_links=PRIMARY_LINKS,
             profile_links=PROFILE_LINKS,
         )

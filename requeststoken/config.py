@@ -11,6 +11,7 @@ PACKAGE = "requests"
 DEX_API = f"https://api.dexscreener.com/latest/dex/tokens/{CONTRACT}"
 DEX_PAGE = f"https://dexscreener.com/solana/{CONTRACT}"
 PUMP_PAGE = f"https://pump.fun/coin/{CONTRACT}"
+FOMO_PAGE = f"https://fomo.family/tokens/solana/{CONTRACT}"
 
 
 PYPI_PAGE = f"https://pypi.org/project/{PACKAGE}/"
@@ -50,6 +51,11 @@ PRIMARY_LINKS = (
         "label": "pump.fun",
         "href": PUMP_PAGE,
         "note": "Token page for this contract",
+    },
+    {
+        "label": "fomo",
+        "href": FOMO_PAGE,
+        "note": "Trade and follow this contract on fomo",
     },
     {
         "label": "Requests on PyPI",

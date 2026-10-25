@@ -244,7 +244,7 @@ def test_homepage_renders_facts_figures_and_the_disclaimer():
     assert 'href="https://kennethreitz.org/essays/2013-01-be_cordial_or_be_on_your_way"' in text
     assert text.index('id="rules"') < text.index('id="intentions"')
     assert "February 14, 2027" in text
-    assert "about 11%" in text
+    assert "about 10.7%" in text
     assert "not financial advice" in text
     assert "afford to lose" in text
     assert "impersonators" in text
@@ -295,3 +295,13 @@ def test_section_anchors():
         assert f'href="{nav}"' in html
     css = pathlib.Path("static/css/site.css").read_text()
     assert "scroll-margin-top" in css
+
+
+def test_fomo_link():
+    from requeststoken.config import FOMO_PAGE, PRIMARY_LINKS
+    assert FOMO_PAGE == "https://fomo.family/tokens/solana/6ceuPfcE67PLs3Z6CbJpFpqNyAevVocP2zsDkbM1pump"
+    assert any(link["href"] == FOMO_PAGE for link in PRIMARY_LINKS)
+    import pathlib
+    html = pathlib.Path("templates/index.html").read_text()
+    assert "Also trade and follow on" in html
+    assert html.count("{{ fomo_page }}") == 2
